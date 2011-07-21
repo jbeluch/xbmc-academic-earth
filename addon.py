@@ -26,6 +26,7 @@ def show_index():
         {'label': 'Subjects', 'url': plugin.url_for('show_subjects')},
         {'label': 'Universities', 'url': plugin.url_for('show_universities')},
         {'label': 'Instructors', 'url': plugin.url_for('show_instructors')},
+        {'label': 'Top Rated Instructors', 'url': plugin.url_for('show_top_instructors')},
     ]
     return plugin.add_items(items)
 
@@ -71,7 +72,20 @@ def show_instructors(url):
 
     return plugin.add_items(items)
 
-@plugin.route('/instructors/<url>/')
+@plugin.route('/instructors/top/', url=BASE_URL)
+def show_top_instructors(url):
+    html = htmlify(url)
+    menu = html.find('ul', {'id': 'categories-accordion'})
+    speakers = menu.findAll('a', {'class': 'accordion-item', 'href': lambda h: '/speakers/' in h})
+
+    items = [{
+        'label': item.string,
+        'url': plugin.url_for('show_instructor_courses', url=full_url(item['href'])),
+    } for item in speakers]
+
+    return plugin.add_items(items)
+
+@plugin.route('/instructors/courses/<url>/')
 def show_instructor_courses(url):
     html = htmlify(url)
     parent_div = html.find('div', {'class': 'results-list'})
