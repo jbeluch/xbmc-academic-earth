@@ -47,12 +47,54 @@ def show_subjects(url):
 
 @plugin.route('/universities/', url=full_url('universities'))
 def show_universities(url):
-    pass
+    html = htmlify(url)
+    parent_div = html.find('div', {'class': 'institution-list'})
+    universities = parent_div.findAll('a')
 
+    items = [{
+        'label': item.string,
+        'url': plugin.url_for('show_topics', url=full_url(item['href'])),
+    } for item in universities]
 
-@plugin.route('/instructors/')
-def show_instructors():
-    pass
+    return plugin.add_items(items)
+
+@plugin.route('/instructors/', url=full_url('speakers'))
+def show_instructors(url):
+    html = htmlify(url)
+    uls = html.findAll('ul', {'class': 'professors-list'})
+    professors = uls[0].findAll('li') + uls[1].findAll('li')
+
+    items = [{
+        'label': item.a.string,
+        'url': plugin.url_for('show_instructor_courses', url=full_url(item.a['href'])),
+    } for item in professors]
+
+    return plugin.add_items(items)
+
+@plugin.route('/instructors/<url>/')
+def show_instructor_courses(url):
+    html = htmlify(url)
+    parent_div = html.find('div', {'class': 'results-list'})
+    courses_lectures = parent_div.findAll('li')
+
+    courses = filter(lambda item: '/courses/' in item.h4.a['href'], courses_lectures)
+    lectures = filter(lambda item: '/lectures/' in item.h4.a['href'], courses_lectures)
+
+    course_items = [{
+        'label': item.h4.a.string,
+        'url': plugin.url_for('show_lectures', url=full_url(item.h4.a['href'])),
+        'thumbnail': full_url(item.find('img', {'width': '144'})['src']),
+    } for item in courses]
+
+    lecture_items = [{
+        'label': 'Lecture: %s' % item.h4.a.string,
+        'url': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
+        'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
+        'is_folder': False,
+        'is_playable': True,
+    } for item in lectures]
+
+    return plugin.add_items(course_items + lecture_items)
 
 @plugin.route('/topics/<url>/')
 def show_topics(url):
