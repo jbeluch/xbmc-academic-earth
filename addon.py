@@ -5,10 +5,14 @@ from urlparse import urljoin
 from resources.lib.getflashvideo import YouTube
 import re
 
+from resources.lib.favorites import favorites
+from xbmcswift import xbmcgui
+
 __plugin_name__ = 'New Academic Earth'
 __plugin_id__ = 'plugin.video.newacademicearth'
 
-plugin = Plugin(__plugin_name__, __plugin_id__)
+plugin = Plugin(__plugin_name__, __plugin_id__, filepath=__file__)
+plugin.register_module(favorites, '/favorites')
 
 BASE_URL = 'http://academicearth.org'
 def full_url(path):
@@ -28,6 +32,7 @@ def show_index():
         {'label': 'Instructors', 'url': plugin.url_for('show_instructors')},
         {'label': 'Top Rated Instructors', 'url': plugin.url_for('show_top_instructors')},
         {'label': 'Playlists', 'url': plugin.url_for('show_playlists')},
+        {'label': 'Your Website Favorites', 'url': plugin.url_for('favorites.show_favorites')},
     ]
     return plugin.add_items(items)
 
@@ -99,6 +104,7 @@ def show_playlists(url):
 
     return plugin.add_items(items)
     
+
 
 @plugin.route('/instructors/courses/<url>/')
 def show_instructor_courses(url):
@@ -203,6 +209,23 @@ def show_courses(url):
 
 @plugin.route('/lectures/<url>/')
 def show_lectures(url):
+    def get_plot(item):
+        if item.p:
+            return item.p.string
+        return ''
+
+    def get_add_to_favorites_url(item):
+        path = item.find('a', {'class': 'add'})
+        if path:
+            return ('Add to favorites',
+                    'XBMC.RunPlugin(%s)' % favorites.url_for(
+                        'favorites.add_lecture',
+                        url=full_url(path)['href']
+            ))
+        return
+        
+        
+
     html = htmlify(url)
     parent_div = html.find('div', {'class': 'results-list'})
     lectures = parent_div.findAll('li')
@@ -213,10 +236,18 @@ def show_lectures(url):
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_folder': False,
         'is_playable': True,
-        # Weird if statement is because we are using this view to parse a course page
+        # Call to get_plot is because we are using this view to parse a course page
         # and also parse a playlist page. The playlist pages don't contain a lecture
         # description.
-        'info': {'plot': item.p.string if item.p else ''},
+        'info': {'plot': get_plot(item)},
+        'context_menu': [
+            ('Add to website favorites',
+             'XBMC.RunPlugin(%s)' % favorites.url_for(
+                'favorites.add_lecture',
+                url=full_url(item.find('a', {'class': 'add'})['href'])
+            )),
+        ],
+
     } for item in lectures]
 
     return plugin.add_items(items)
@@ -241,6 +272,7 @@ def watch_lecture(url):
         video_url = YouTube.get_flashvideo_url(videoid=m.group(1))
         return plugin.set_resolved_url(video_url)
 
+    xbmcgui.Dialog().ok('Academic Earth', 'No video url found. Please alert plugin author.')
     raise Exception, 'No video url found. Please alert plugin author.'
 
 
