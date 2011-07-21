@@ -27,6 +27,7 @@ def show_index():
         {'label': 'Universities', 'url': plugin.url_for('show_universities')},
         {'label': 'Instructors', 'url': plugin.url_for('show_instructors')},
         {'label': 'Top Rated Instructors', 'url': plugin.url_for('show_top_instructors')},
+        {'label': 'Playlists', 'url': plugin.url_for('show_playlists')},
     ]
     return plugin.add_items(items)
 
@@ -84,6 +85,20 @@ def show_top_instructors(url):
     } for item in speakers]
 
     return plugin.add_items(items)
+
+@plugin.route('/playlists/', url=full_url('playlists'))
+def show_playlists(url):
+    html = htmlify(url)
+    playlists = html.find('ol', {'class': 'playlist-list'}).findAll('li', recursive=False)
+
+    items = [{
+        'label': item.h4.findAll('a')[-1].string,
+        'url': plugin.url_for('show_lectures', url=full_url(item.a['href'])),
+        'thumbnail': full_url(item.find('img', {'width': '144'})['src']),
+    } for item in playlists]
+
+    return plugin.add_items(items)
+    
 
 @plugin.route('/instructors/courses/<url>/')
 def show_instructor_courses(url):
@@ -198,7 +213,10 @@ def show_lectures(url):
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_folder': False,
         'is_playable': True,
-        'info': {'plot': item.p.string},
+        # Weird if statement is because we are using this view to parse a course page
+        # and also parse a playlist page. The playlist pages don't contain a lecture
+        # description.
+        'info': {'plot': item.p.string if item.p else ''},
     } for item in lectures]
 
     return plugin.add_items(items)
