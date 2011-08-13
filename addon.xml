@@ -2,9 +2,8 @@
 <addon id="plugin.video.newacademicearth" name="New Academic Earth" version="0.1" provider-name="Jonathan Beluch">
   <requires>
     <import addon="xbmc.python" version="1.0"/>
-    <!-- Required for getflashvideo.py -->
     <import addon="script.module.beautifulsoup" version="3.0.8"/>
-    <import addon="script.module.xbmcswift" version="0.1"/>
+    <import addon="script.module.xbmcswift" version="0.1.2"/>
   </requires>
   <extension point="xbmc.python.pluginsource" library="addon.py">
     <provides>video</provides>
