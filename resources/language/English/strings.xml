@@ -2,4 +2,9 @@
 <strings>
   <!-- Plugin name -->
   <string id="30000">New Academic Earth</string>
+
+  <!-- Seetings stuff -->
+  <string id="30100">Account Settings for http://www.academicearth.org</string>
+  <string id="30101">Username:</string>
+  <string id="30102">Password:</string>
 </strings>
