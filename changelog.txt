@@ -1,0 +1,9 @@
+Version 1.1.0
+* Fixed problems with certain lectures not playing.
+* Added browsing support for Universities, Playlists, Instructors, Top
+Instructors
+* Added support for viewing favorites from http://academicearth.org. Includes
+support for adding/removing videos from favorites via the context menu.
+
+Version 1.0.4
+* Fixed BeautifulSoup import error.
