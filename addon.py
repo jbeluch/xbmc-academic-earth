@@ -1,4 +1,18 @@
 #!/usr/bin/env python
+# Copyright 2011 Jonathan Beluch.  
+# 
+# This program is free software: you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published by 
+# the Free Software Foundation, either version 3 of the License, or 
+# (at your option) any later version. 
+# 
+# This program is distributed in the hope that it will be useful, 
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+# GNU General Public License for more details. 
+# 
+# You should have received a copy of the GNU General Public License 
+# along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 from xbmcswift import Plugin, download_page
 from BeautifulSoup import BeautifulSoup as BS, SoupStrainer as SS
 from urlparse import urljoin
@@ -27,12 +41,12 @@ def filter_free(items):
 @plugin.route('/')
 def show_index():
     items = [
-        {'label': 'Subjects', 'url': plugin.url_for('show_subjects')},
-        {'label': 'Universities', 'url': plugin.url_for('show_universities')},
-        {'label': 'Instructors', 'url': plugin.url_for('show_instructors')},
-        {'label': 'Top Rated Instructors', 'url': plugin.url_for('show_top_instructors')},
-        {'label': 'Playlists', 'url': plugin.url_for('show_playlists')},
-        {'label': 'Your Website Favorites', 'url': plugin.url_for('favorites.show_favorites')},
+        {'label': plugin.get_string(30200), 'url': plugin.url_for('show_subjects')},
+        {'label': plugin.get_string(30201), 'url': plugin.url_for('show_universities')},
+        {'label': plugin.get_string(30202), 'url': plugin.url_for('show_instructors')},
+        {'label': plugin.get_string(30203), 'url': plugin.url_for('show_top_instructors')},
+        {'label': plugin.get_string(30204), 'url': plugin.url_for('show_playlists')},
+        {'label': plugin.get_string(30205), 'url': plugin.url_for('favorites.show_favorites')},
     ]
     return plugin.add_items(items)
 
@@ -122,7 +136,7 @@ def show_instructor_courses(url):
     } for item in courses]
 
     lecture_items = [{
-        'label': 'Lecture: %s' % item.h4.a.string,
+        'label': '%s: %s' % (plugin.get_string(30206), item.h4.a.string),
         'url': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_folder': False,
@@ -196,7 +210,7 @@ def show_courses(url):
     } for item in courses]
 
     lecture_items = [{
-        'label': 'Lecture: %s' % item.h3.a.string,
+        'label': '%s: %s' % (plugin.get_string(30206),item.h3.a.string),
         'url': plugin.url_for('watch_lecture', url=full_url(item.h3.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_folder': False,
@@ -217,15 +231,13 @@ def show_lectures(url):
     def get_add_to_favorites_url(item):
         path = item.find('a', {'class': 'add'})
         if path:
-            return ('Add to favorites',
+            return (plugin.get_string(30300), # Add to favorites
                     'XBMC.RunPlugin(%s)' % favorites.url_for(
                         'favorites.add_lecture',
                         url=full_url(path)['href']
             ))
         return
         
-        
-
     html = htmlify(url)
     parent_div = html.find('div', {'class': 'results-list'})
     lectures = parent_div.findAll('li')
@@ -241,7 +253,7 @@ def show_lectures(url):
         # description.
         'info': {'plot': get_plot(item)},
         'context_menu': [
-            ('Add to website favorites',
+            (plugin.get_string(30300), # Add to favorites
              'XBMC.RunPlugin(%s)' % favorites.url_for(
                 'favorites.add_lecture',
                 url=full_url(item.find('a', {'class': 'add'})['href'])
@@ -272,14 +284,9 @@ def watch_lecture(url):
         video_url = YouTube.get_flashvideo_url(videoid=m.group(1))
         return plugin.set_resolved_url(video_url)
 
-    xbmcgui.Dialog().ok('Academic Earth', 'No video url found. Please alert plugin author.')
+    xbmcgui.Dialog().ok(plugin.get_string(30000), plugin.get_string(30400))
     raise Exception, 'No video url found. Please alert plugin author.'
 
 
 if __name__ == '__main__': 
     plugin.run()
-
-
-
-
-
