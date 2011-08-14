@@ -1,3 +1,17 @@
+# Copyright 2011 Jonathan Beluch.  
+# 
+# This program is free software: you can redistribute it and/or modify 
+# it under the terms of the GNU General Public License as published by 
+# the Free Software Foundation, either version 3 of the License, or 
+# (at your option) any later version. 
+# 
+# This program is distributed in the hope that it will be useful, 
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
+# GNU General Public License for more details. 
+# 
+# You should have received a copy of the GNU General Public License 
+# along with this program.  If not, see <http://www.gnu.org/licenses/>. 
 from xbmcswift import Module, download_page as _download_page
 from BeautifulSoup import BeautifulSoup as BS
 from urllib import urlencode
@@ -52,11 +66,10 @@ class AuthSession(object):
         }
         resp = self.opener.open(LOGIN_URL, urlencode(params))
 
-        print 'LOGIN RESP.URL', resp.geturl()
-
         if resp.geturl().startswith(LOGIN_URL):
             dialog = xbmcgui.Dialog()
-            dialog.ok('Academic Earth', 'It seems your username/password aren\'t valid.')
+            # Incorrect username/password error message
+            dialog.ok(favorites._plugin.get_string(30000), favorites._plugin.get_string(30401))
             favorites._plugin.open_settings()
             return False
 
@@ -95,7 +108,6 @@ def show_favorites(url):
         return
     html = BS(src)
 
-    #html = htmlify(url)
     videos = html.find('ul', {'class': 'favorites-list'}).findAll('li')
 
     items = [{
@@ -106,13 +118,15 @@ def show_favorites(url):
         'is_folder': False,
         'is_playable': True,
         'context_menu': [
-            ('Remove from website favorites', 
+            (favorites._plugin.get_string(30301), 
              'XBMC.RunPlugin(%s)' % favorites.url_for(
                 'favorites.remove_lecture',
                 url=full_url(item.find('div', {'class': 'delete'}).a['href'])
             )),
         ],
     } for item in videos]
+
+    xbmcgui.Dialog().ok(favorites._plugin.get_string(30000), favorites._plugin.get_string(30404))
 
     return favorites.add_items(items)
 
@@ -121,11 +135,11 @@ def remove_lecture(url):
     '''This is a context menu view to remove an item from a user's favorites on
     academciearth.org'''
     if not s.download_page(url):
-        xbmcgui.Dialog().ok('Academic Earth', 'There was a problem removing the item from your website favorites.')
+        xbmcgui.Dialog().ok(favorites._plugin.get_string(30000), favorites._plugin.get_string(30403))
 
 @favorites.route('/add/<url>/')
 def add_lecture(url):
     '''This is a context menu view to add an item to a user's favorites on
     academciearth.org'''
     if not s.download_page(url):
-        xbmcgui.Dialog().ok('Academic Earth', 'There was a problem adding the item to your website favorites.')
+        xbmcgui.Dialog().ok(favorites._plugin.get_string(30000), favorites._plugin.get_string(30404))
