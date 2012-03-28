@@ -1,8 +1,6 @@
-Version 1.2.0
-* Updated required versions of xbmcswift and python for Eden.
-
 Version 1.1.3
-* Needed a new version number.
+* Update parsing code to reflect website changes.
+* Add youtube plugin as a requirement.
 
 Version 1.1.2
 * Fixed incorrect addon id causing plugin to fail.
