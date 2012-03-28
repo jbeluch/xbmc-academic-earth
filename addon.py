@@ -16,7 +16,7 @@
 from xbmcswift import Plugin, download_page
 from BeautifulSoup import BeautifulSoup as BS, SoupStrainer as SS
 from urlparse import urljoin
-from resources.lib.getflashvideo import YouTube
+from resources.lib.videohosts import resolve
 import re
 
 from resources.lib.favorites import favorites
@@ -273,22 +273,16 @@ def show_lectures(url):
 @plugin.route('/watch/<url>/')
 def watch_lecture(url):
     src = download_page(url)
-    # There are 2 different hosts for lectures.
-    # blip.tv and youtube.
 
-    # Attempt to match blip.tv
-    flv_ptn = re.compile(r'flashVars.flvURL = "(.+?)"')
-    m = flv_ptn.search(src)
+    # First attempt to look for easy flv urls
+    pattern = re.compile(r'flashVars.flvURL = "(.+?)"')
+    m = pattern.search(src)
     if m:
-        return plugin.set_resolved_url(m.group(1))
-
-    # If we're still here attempt to match youtube
-    #videoid_ptn =
-    ytid_ptn = re.compile(r'flashVars.ytID = "(.+?)"')
-    m = ytid_ptn.search(src)
-    if m:
-        video_url = YouTube.get_flashvideo_url(videoid=m.group(1))
-        return plugin.set_resolved_url(video_url)
+        resolved_url = m.group(1)
+    else:
+        resolved_url = resolve(src)
+    if resolved_url:
+        return plugin.set_resolved_url(resolved_url)
 
     xbmcgui.Dialog().ok(plugin.get_string(30000), plugin.get_string(30400))
     raise Exception, 'No video url found. Please alert plugin author.'
