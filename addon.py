@@ -250,6 +250,8 @@ def show_courses(url, page='1'):
 
     @plugin.cache()
     def get_course_items(url, page):
+        '''Exists as a separate function so we can call plugin.cache()
+        '''
         html = htmlify('%s/page:%s' % (url, page))
         courses_lectures = html.findAll('div', {'class': 'thumb'})
 
@@ -269,15 +271,14 @@ def show_courses(url, page='1'):
 
         pagination_items = get_pagination(html)
         return pagination_items + course_items + lecture_items
+    # Since we are passing a value for update_listing, we cannot use the
+    # cached_route decorator on the entire view.
     return plugin.finish(get_course_items(url, page), update_listing=page!='1')
 
 
-#cache = plugin.get_cache('function_cache')
-#cache.clear()
-#cache.sync()
-
 @plugin.cached_route('/lectures/<url>/')
 def show_lectures(url):
+    '''Displays lectures for a give course.'''
     def get_plot(item):
         if item.p:
             return item.p.string
@@ -299,12 +300,13 @@ def show_lectures(url):
 
     items = [{
         'label': item.h4.a.string,
-        'path': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
+        'path': plugin.url_for('watch_lecture',
+                               url=full_url(item.h4.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_playable': True,
-        # Call to get_plot is because we are using this view to parse a course page
-        # and also parse a playlist page. The playlist pages don't contain a lecture
-        # description.
+        # Call to get_plot is because we are using this view to parse a course
+        # page and also parse a playlist page. The playlist pages don't contain
+        # a lecture description.
         #'info': {'plot': get_plot(item)},
         'context_menu': [
             (plugin.get_string(30300), # Add to favorites
@@ -313,22 +315,27 @@ def show_lectures(url):
                 url=full_url(item.find('a', {'class': 'add'})['href'])
             )),
         ],
-
     } for item in lectures]
     return items
 
 
 @plugin.route('/watch/<url>/')
 def watch_lecture(url):
-    src = download_page(url)
+    '''Callback to parse a lecture URL and pass to the youtube plugin.
+    '''
+    @plugin.cache()
+    def get_lecture_url(url):
+        src = download_page(url)
 
-    # First attempt to look for easy flv urls
-    pattern = re.compile(r'flashVars.flvURL = "(.+?)"')
-    m = pattern.search(src)
-    if m:
-        resolved_url = m.group(1)
-    else:
-        resolved_url = resolve(src)
+        # First attempt to look for easy flv urls
+        pattern = re.compile(r'flashVars.flvURL = "(.+?)"')
+        m = pattern.search(src)
+        if m:
+            return m.group(1)
+        else:
+            return resolve(src)
+
+    resolved_url = get_lecture_url(url)
     if resolved_url:
         return plugin.set_resolved_url(resolved_url)
 
