@@ -21,37 +21,51 @@ from resources.lib.videohosts import resolve
 from resources.lib.favorites import favorites
 
 
-__plugin_name__ = 'New Academic Earth'
-__plugin_id__ = 'plugin.video.academicearth'
-
-plugin = Plugin(__plugin_name__, __plugin_id__, filepath=__file__)
+PLUGIN_NAME = 'Academic Earth'
+PLUGIN_ID = 'plugin.video.academicearth'
+plugin = Plugin(PLUGIN_NAME, PLUGIN_ID, __file__)
 plugin.register_module(favorites, '/favorites')
+
 
 BASE_URL = 'http://academicearth.org'
 def full_url(path):
+    '''Creates a full academicearth.org url from a relative path'''
     return urljoin(BASE_URL, path)
 
+
 def htmlify(url):
+    '''Returns a BeautifulSoup object for the given url's content.'''
     return BS(download_page(url), convertEntities=BS.HTML_ENTITIES)
 
+
 def filter_free(items):
-    return filter(lambda item: not item['label'].startswith('Online'), items)
+    '''Filters a list of items to remove "non-free" items'''
+    return [item for item in items if not item['label'].startswith('Online')]
+
 
 @plugin.route('/')
 def show_index():
+    '''Main menu'''
     items = [
-        {'label': plugin.get_string(30200), 'path': plugin.url_for('show_subjects')},
-        {'label': plugin.get_string(30201), 'path': plugin.url_for('show_universities')},
-        {'label': plugin.get_string(30202), 'path': plugin.url_for('show_instructors')},
-        {'label': plugin.get_string(30203), 'path': plugin.url_for('show_top_instructors')},
-        {'label': plugin.get_string(30204), 'path': plugin.url_for('show_playlists')},
-        {'label': plugin.get_string(30205), 'path': plugin.url_for('favorites.show_favorites')},
+        {'label': plugin.get_string(30200),
+         'path': plugin.url_for('show_subjects')},
+        {'label': plugin.get_string(30201),
+         'path': plugin.url_for('show_universities')},
+        {'label': plugin.get_string(30202),
+         'path': plugin.url_for('show_instructors')},
+        {'label': plugin.get_string(30203),
+         'path': plugin.url_for('show_top_instructors')},
+        {'label': plugin.get_string(30204),
+         'path': plugin.url_for('show_playlists')},
+        {'label': plugin.get_string(30205),
+         'path': plugin.url_for('favorites.show_favorites')},
     ]
     return items
 
 
 @plugin.cached_route('/subjects/', options={'url': full_url('subjects')})
 def show_subjects(url):
+    '''Lists available subjects found on the website'''
     html = htmlify(url)
     subjects = html.findAll('a', {'class': 'subj-links'})
 
@@ -59,14 +73,12 @@ def show_subjects(url):
         'label': subject.div.string.strip(),
         'path': plugin.url_for('show_topics', url=full_url(subject['href'])),
     } for subject in subjects]
-
-    # Filter out non-free subjects
-    items = filter(lambda item: item['label'] != 'Courses for Credit', items)
-    return items
+    return filter_free(items)
 
 
 @plugin.cached_route('/universities/', options={'url': full_url('universities')})
 def show_universities(url):
+    '''Lists available universities found on the website'''
     html = htmlify(url)
     universities = html.findAll('a', {'class': 'subj-links'})
 
