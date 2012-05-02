@@ -141,19 +141,23 @@ def show_instructors(page):
 
 @plugin.cached_route('/topinstructors/', options={'url': BASE_URL})
 def show_top_instructors(url):
+    '''Displays the top instructors from the website homepage.'''
     html = htmlify(url)
     menu = html.find('ul', {'id': 'categories-accordion'})
-    speakers = menu.findAll('a', {'class': 'accordion-item', 'href': lambda h: '/speakers/' in h})
+    speakers = menu.findAll('a', {'class': 'accordion-item',
+                                  'href': lambda h: '/speakers/' in h})
 
     items = [{
         'label': item.string,
-        'path': plugin.url_for('show_instructor_courses', url=full_url(item['href'])),
+        'path': plugin.url_for('show_instructor_courses',
+                               url=full_url(item['href'])),
     } for item in speakers]
     return items
 
 
 @plugin.cached_route('/playlists/', options={'url': full_url('playlists')})
 def show_playlists(url):
+    '''Displays playlists found on the website.'''
     html = htmlify(url)
     playlists = html.find('ol', {'class': 'playlist-list'}).findAll('li', recursive=False)
 
@@ -167,6 +171,7 @@ def show_playlists(url):
 
 @plugin.cached_route('/instructors/courses/<url>/')
 def show_instructor_courses(url):
+    '''Displays courses and lectures taught by a specific speaker.'''
     html = htmlify(url)
     parent_div = html.find('div', {'class': 'results-list'})
     courses_lectures = parent_div.findAll('li')
@@ -186,6 +191,7 @@ def show_instructor_courses(url):
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_playable': True,
     } for item in lectures]
+
     return course_items + lecture_items
 
 
