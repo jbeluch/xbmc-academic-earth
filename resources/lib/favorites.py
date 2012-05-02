@@ -21,7 +21,7 @@ import os
 from urlparse import urljoin
 
 favorites = Module('favorites')
-BASE_URL = 'http://academicearth.org'
+BASE_URL = 'http://www.academicearth.org'
 def full_url(path):
     return urljoin(BASE_URL, path)
 LOGIN_URL = full_url('users/login')
@@ -53,8 +53,8 @@ class AuthSession(object):
         self.cookie_jar = cookielib.LWPCookieJar(self.cookie_jar_path)
 
     def authenticate(self, username=None, password=None):
-        username = username or favorites._plugin.get_setting('username')
-        password = password or favorites._plugin.get_setting('password')
+        username = username or favorites.get_setting('username')
+        password = password or favorites.get_setting('password')
 
         params = {
             '_method': 'POST',
@@ -86,6 +86,7 @@ class AuthSession(object):
         # then we'll call authenticate which should log in properly. If the
         # call to authenticate returns False, then there was a problem logging
         # in so we should just return None.
+        favorites.log.debug('respurl %s' % resp.geturl())
         if resp.geturl() == LOGIN_URL + '/':
             if self.authenticate() is False:
                 return None
@@ -112,6 +113,7 @@ def show_favorites(url):
     items = [{
         'label': item.h3.a.string,
         'path': favorites.url_for('watch_lecture',
+                                  explicit=True,
                                  url=full_url(item.h3.a['href'])),
         'thumbnail': full_url(item.img['src']),
         'is_playable': True,
@@ -135,6 +137,9 @@ def remove_lecture(url):
     academciearth.org'''
     if not s.download_page(url):
         xbmcgui.Dialog().ok(favorites._plugin.get_string(30000), favorites._plugin.get_string(30403))
+    else:
+        # TODO: Refresh view since we've just removed it from list
+        favorites.notify('Successfully removed lecture from favorites.')
 
 @favorites.route('/add/<url>/')
 def add_lecture(url):
@@ -142,3 +147,5 @@ def add_lecture(url):
     academciearth.org'''
     if not s.download_page(url):
         xbmcgui.Dialog().ok(favorites._plugin.get_string(30000), favorites._plugin.get_string(30404))
+    else:
+        favorites.notify('Successfully added lecture to favorites.')
