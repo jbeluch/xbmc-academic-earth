@@ -12,14 +12,13 @@
 # 
 # You should have received a copy of the GNU General Public License 
 # along with this program.  If not, see <http://www.gnu.org/licenses/>. 
-from xbmcswift import Module, download_page as _download_page
+from xbmcswift2 import Module, download_page as _download_page, xbmcgui
 from BeautifulSoup import BeautifulSoup as BS
 from urllib import urlencode
 import cookielib
 import urllib2
 import os
 from urlparse import urljoin
-from xbmcswift import xbmcgui
 
 favorites = Module('favorites')
 BASE_URL = 'http://academicearth.org'
@@ -99,7 +98,7 @@ def get_cookie_fn():
 s = AuthSession(get_cookie_fn)
 
 ## View functions for favorites
-@favorites.route('/', url=full_url('favorites'))
+@favorites.route('/', options={'url': full_url('favorites')})
 def show_favorites(url):
     '''Shows your favorite videos from http://acadmemicearth.org/favorites.'
     '''

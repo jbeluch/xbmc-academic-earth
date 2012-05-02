@@ -13,14 +13,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from xbmcswift import Plugin, download_page
+import re
+from xbmcswift2 import Plugin, download_page, xbmcgui
 from BeautifulSoup import BeautifulSoup as BS, SoupStrainer as SS
 from urlparse import urljoin
 from resources.lib.videohosts import resolve
-import re
-
 from resources.lib.favorites import favorites
-from xbmcswift import xbmcgui
+
 
 __plugin_name__ = 'New Academic Earth'
 __plugin_id__ = 'plugin.video.academicearth'
@@ -41,43 +40,43 @@ def filter_free(items):
 @plugin.route('/')
 def show_index():
     items = [
-        {'label': plugin.get_string(30200), 'url': plugin.url_for('show_subjects')},
-        {'label': plugin.get_string(30201), 'url': plugin.url_for('show_universities')},
-        {'label': plugin.get_string(30202), 'url': plugin.url_for('show_instructors')},
-        {'label': plugin.get_string(30203), 'url': plugin.url_for('show_top_instructors')},
-        {'label': plugin.get_string(30204), 'url': plugin.url_for('show_playlists')},
-        {'label': plugin.get_string(30205), 'url': plugin.url_for('favorites.show_favorites')},
+        {'label': plugin.get_string(30200), 'path': plugin.url_for('show_subjects')},
+        {'label': plugin.get_string(30201), 'path': plugin.url_for('show_universities')},
+        {'label': plugin.get_string(30202), 'path': plugin.url_for('show_instructors')},
+        {'label': plugin.get_string(30203), 'path': plugin.url_for('show_top_instructors')},
+        {'label': plugin.get_string(30204), 'path': plugin.url_for('show_playlists')},
+        {'label': plugin.get_string(30205), 'path': plugin.url_for('favorites.show_favorites')},
     ]
-    return plugin.add_items(items)
+    return plugin.finish(items)
 
-@plugin.route('/subjects/', url=full_url('subjects'))
+@plugin.route('/subjects/', options={'url': full_url('subjects')})
 def show_subjects(url):
     html = htmlify(url)
     subjects = html.findAll('a', {'class': 'subj-links'})
 
     items = [{
         'label': subject.div.string.strip(),
-        'url': plugin.url_for('show_topics', url=full_url(subject['href'])),
+        'path': plugin.url_for('show_topics', url=full_url(subject['href'])),
     } for subject in subjects]
 
     # Filter out non-free subjects
     items = filter(lambda item: item['label'] != 'Courses for Credit', items)
 
-    return plugin.add_items(items)
+    return plugin.finish(items)
 
-@plugin.route('/universities/', url=full_url('universities'))
+@plugin.route('/universities/', options={'url': full_url('universities')})
 def show_universities(url):
     html = htmlify(url)
     universities = html.findAll('a', {'class': 'subj-links'})
 
     items = [{
         'label': item.div.string.strip(),
-        'url': plugin.url_for('show_topics', url=full_url(item['href'])),
+        'path': plugin.url_for('show_topics', url=full_url(item['href'])),
     } for item in universities]
 
-    return plugin.add_items(items)
+    return plugin.finish(items)
 
-@plugin.route('/instructors/', page='1')
+@plugin.route('/instructors/', options={'page': '1'})
 @plugin.route('/instructors/<page>/', name='show_instructors_page')
 def show_instructors(page):
     def get_pagination(html):
@@ -86,14 +85,14 @@ def show_instructors(page):
         if int(page) > 1:
             items.append({
                 'label': '< Previous',
-                'url': plugin.url_for('show_instructors_page', page=str(int(page)-1)),
+                'path': plugin.url_for('show_instructors_page', page=str(int(page)-1)),
             })
 
         next = html.find('span', {'class': 'tab-nav-arrow tab-nav-arrow-r'})
         if next:
             items.append({
                 'label': 'Next >',
-                'url': plugin.url_for('show_instructors_page', page=str(int(page)+1)),
+                'path': plugin.url_for('show_instructors_page', page=str(int(page)+1)),
             })
         return items
 
@@ -103,13 +102,13 @@ def show_instructors(page):
 
     items = [{
         'label': item.div.string,
-        'url': plugin.url_for('show_instructor_courses', url=full_url(item.a['href'])),
+        'path': plugin.url_for('show_instructor_courses', url=full_url(item.a['href'])),
     } for item in speakers]
 
     # Add pagination
-    return plugin.add_items(get_pagination(html) + items)
+    return plugin.finish(get_pagination(html) + items)
 
-@plugin.route('/topinstructors/', url=BASE_URL)
+@plugin.route('/topinstructors/', options={'url': BASE_URL})
 def show_top_instructors(url):
     html = htmlify(url)
     menu = html.find('ul', {'id': 'categories-accordion'})
@@ -117,23 +116,23 @@ def show_top_instructors(url):
 
     items = [{
         'label': item.string,
-        'url': plugin.url_for('show_instructor_courses', url=full_url(item['href'])),
+        'path': plugin.url_for('show_instructor_courses', url=full_url(item['href'])),
     } for item in speakers]
 
-    return plugin.add_items(items)
+    return plugin.finish(items)
 
-@plugin.route('/playlists/', url=full_url('playlists'))
+@plugin.route('/playlists/', options={'url': full_url('playlists')})
 def show_playlists(url):
     html = htmlify(url)
     playlists = html.find('ol', {'class': 'playlist-list'}).findAll('li', recursive=False)
 
     items = [{
         'label': item.h4.findAll('a')[-1].string,
-        'url': plugin.url_for('show_lectures', url=full_url(item.a['href'])),
+        'path': plugin.url_for('show_lectures', url=full_url(item.a['href'])),
         'thumbnail': full_url(item.find('img', {'width': '144'})['src']),
     } for item in playlists]
 
-    return plugin.add_items(items)
+    return plugin.finish(items)
 
 
 
@@ -148,19 +147,19 @@ def show_instructor_courses(url):
 
     course_items = [{
         'label': item.h4.a.string,
-        'url': plugin.url_for('show_lectures', url=full_url(item.h4.a['href'])),
+        'path': plugin.url_for('show_lectures', url=full_url(item.h4.a['href'])),
         'thumbnail': full_url(item.find('img', {'width': '144'})['src']),
     } for item in courses]
 
     lecture_items = [{
         'label': '%s: %s' % (plugin.get_string(30206), item.h4.a.string),
-        'url': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
+        'path': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_folder': False,
         'is_playable': True,
     } for item in lectures]
 
-    return plugin.add_items(course_items + lecture_items)
+    return plugin.finish(course_items + lecture_items)
 
 @plugin.route('/topics/<url>/')
 def show_topics(url):
@@ -169,7 +168,7 @@ def show_topics(url):
 
     items = [{
         'label': topic.string,
-        'url': plugin.url_for('show_courses', url=full_url(topic['href'])),
+        'path': plugin.url_for('show_courses', url=full_url(topic['href'])),
     } for topic in topics]
 
     # Filter out non free topics
@@ -178,9 +177,9 @@ def show_topics(url):
     # If we only have one item, just redirect to the show_topics page,
     # there's no need to display a single item in the list
     if len(items) == 1:
-        return plugin.redirect(items[0]['url'])
+        return plugin.redirect(items[0]['path'])
 
-    return plugin.add_items(items)
+    return plugin.finish(items)
 
 @plugin.route('/courses/<url>/')
 @plugin.route('/courses/<url>/<page>/', name='show_courses_page')
@@ -190,14 +189,14 @@ def show_courses(url, page='1'):
         if int(page) > 1:
             items.append({
                 'label': '< Previous',
-                'url': plugin.url_for('show_courses_page', url=url, page=str(int(page)-1)),
+                'path': plugin.url_for('show_courses_page', url=url, page=str(int(page)-1)),
             })
 
         next = html.find('span', {'class': 'tab-nav-arrow tab-nav-arrow-r'})
         if next:
             items.append({
                 'label': 'Next >',
-                'url': plugin.url_for('show_courses_page', url=url, page=str(int(page)+1)),
+                'path': plugin.url_for('show_courses_page', url=url, page=str(int(page)+1)),
             })
         return items
 
@@ -211,21 +210,21 @@ def show_courses(url, page='1'):
 
     course_items = [{
         'label': item.parent.find('a', {'class': 'editors-picks-title'}).string,
-        'url': plugin.url_for('show_lectures', url=full_url(item.a['href'])),
+        'path': plugin.url_for('show_lectures', url=full_url(item.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
     } for item in courses]
 
     lecture_items = [{
         'label': '%s: %s' % (plugin.get_string(30206),
             item.parent.find('a', {'class': 'editors-picks-title'}).string),
-        'url': plugin.url_for('watch_lecture', url=full_url(item.a['href'])),
+        'path': plugin.url_for('watch_lecture', url=full_url(item.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_folder': False,
         'is_playable': True,
     } for item in lectures]
 
     pagination_items = get_pagination(html)
-    return plugin.add_items(pagination_items + course_items + lecture_items)
+    return plugin.finish(pagination_items + course_items + lecture_items)
 
 @plugin.route('/lectures/<url>/')
 def show_lectures(url):
@@ -250,7 +249,7 @@ def show_lectures(url):
 
     items = [{
         'label': item.h4.a.string,
-        'url': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
+        'path': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_folder': False,
         'is_playable': True,
@@ -268,7 +267,7 @@ def show_lectures(url):
 
     } for item in lectures]
 
-    return plugin.add_items(items)
+    return plugin.finish(items)
 
 @plugin.route('/watch/<url>/')
 def watch_lecture(url):
