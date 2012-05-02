@@ -176,21 +176,18 @@ def show_instructor_courses(url):
     parent_div = html.find('div', {'class': 'results-list'})
     courses_lectures = parent_div.findAll('li')
 
-    courses = filter(lambda item: '/courses/' in item.h4.a['href'], courses_lectures)
-    lectures = filter(lambda item: '/lectures/' in item.h4.a['href'], courses_lectures)
-
     course_items = [{
         'label': item.h4.a.string,
         'path': plugin.url_for('show_lectures', url=full_url(item.h4.a['href'])),
         'thumbnail': full_url(item.find('img', {'width': '144'})['src']),
-    } for item in courses]
+    } for item in courses_lectures if '/courses/' in item.h4.a['href']]
 
     lecture_items = [{
         'label': '%s: %s' % (plugin.get_string(30206), item.h4.a.string),
         'path': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
         'is_playable': True,
-    } for item in lectures]
+    } for item in courses_lectures if '/lectures/' in item.h4.a['href']]
 
     return course_items + lecture_items
 
