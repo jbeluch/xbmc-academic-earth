@@ -194,6 +194,10 @@ def show_instructor_courses(url):
 
 @plugin.cached_route('/topics/<url>/')
 def show_topics(url):
+    '''Displays topics available for a given subject. If there is only
+    one topic available, the user will be redirected to the topics view
+    instead.
+    '''
     html = htmlify(url)
     topics = html.findAll('a', {'class': 'tab-details-link '})
 
