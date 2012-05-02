@@ -47,9 +47,10 @@ def show_index():
         {'label': plugin.get_string(30204), 'path': plugin.url_for('show_playlists')},
         {'label': plugin.get_string(30205), 'path': plugin.url_for('favorites.show_favorites')},
     ]
-    return plugin.finish(items)
+    return items
 
-@plugin.route('/subjects/', options={'url': full_url('subjects')})
+
+@plugin.cached_route('/subjects/', options={'url': full_url('subjects')})
 def show_subjects(url):
     html = htmlify(url)
     subjects = html.findAll('a', {'class': 'subj-links'})
@@ -61,10 +62,10 @@ def show_subjects(url):
 
     # Filter out non-free subjects
     items = filter(lambda item: item['label'] != 'Courses for Credit', items)
+    return items
 
-    return plugin.finish(items)
 
-@plugin.route('/universities/', options={'url': full_url('universities')})
+@plugin.cached_route('/universities/', options={'url': full_url('universities')})
 def show_universities(url):
     html = htmlify(url)
     universities = html.findAll('a', {'class': 'subj-links'})
@@ -73,11 +74,11 @@ def show_universities(url):
         'label': item.div.string.strip(),
         'path': plugin.url_for('show_topics', url=full_url(item['href'])),
     } for item in universities]
+    return items
 
-    return plugin.finish(items)
 
-@plugin.route('/instructors/', options={'page': '1'})
-@plugin.route('/instructors/<page>/', name='show_instructors_page')
+@plugin.cached_route('/instructors/', options={'page': '1'})
+@plugin.cached_route('/instructors/<page>/', name='show_instructors_page')
 def show_instructors(page):
     def get_pagination(html):
         items = []
@@ -106,9 +107,10 @@ def show_instructors(page):
     } for item in speakers]
 
     # Add pagination
-    return plugin.finish(get_pagination(html) + items)
+    return get_pagination(html) + items
 
-@plugin.route('/topinstructors/', options={'url': BASE_URL})
+
+@plugin.cached_route('/topinstructors/', options={'url': BASE_URL})
 def show_top_instructors(url):
     html = htmlify(url)
     menu = html.find('ul', {'id': 'categories-accordion'})
@@ -118,10 +120,10 @@ def show_top_instructors(url):
         'label': item.string,
         'path': plugin.url_for('show_instructor_courses', url=full_url(item['href'])),
     } for item in speakers]
+    return items
 
-    return plugin.finish(items)
 
-@plugin.route('/playlists/', options={'url': full_url('playlists')})
+@plugin.cached_route('/playlists/', options={'url': full_url('playlists')})
 def show_playlists(url):
     html = htmlify(url)
     playlists = html.find('ol', {'class': 'playlist-list'}).findAll('li', recursive=False)
@@ -131,12 +133,10 @@ def show_playlists(url):
         'path': plugin.url_for('show_lectures', url=full_url(item.a['href'])),
         'thumbnail': full_url(item.find('img', {'width': '144'})['src']),
     } for item in playlists]
-
-    return plugin.finish(items)
-
+    return items
 
 
-@plugin.route('/instructors/courses/<url>/')
+@plugin.cached_route('/instructors/courses/<url>/')
 def show_instructor_courses(url):
     html = htmlify(url)
     parent_div = html.find('div', {'class': 'results-list'})
@@ -155,13 +155,12 @@ def show_instructor_courses(url):
         'label': '%s: %s' % (plugin.get_string(30206), item.h4.a.string),
         'path': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
-        'is_folder': False,
         'is_playable': True,
     } for item in lectures]
+    return course_items + lecture_items
 
-    return plugin.finish(course_items + lecture_items)
 
-@plugin.route('/topics/<url>/')
+@plugin.cached_route('/topics/<url>/')
 def show_topics(url):
     html = htmlify(url)
     topics = html.findAll('a', {'class': 'tab-details-link '})
@@ -178,11 +177,11 @@ def show_topics(url):
     # there's no need to display a single item in the list
     if len(items) == 1:
         return plugin.redirect(items[0]['path'])
+    return items
 
-    return plugin.finish(items)
 
-@plugin.route('/courses/<url>/')
-@plugin.route('/courses/<url>/<page>/', name='show_courses_page')
+@plugin.cached_route('/courses/<url>/')
+@plugin.cached_route('/courses/<url>/<page>/', name='show_courses_page')
 def show_courses(url, page='1'):
     def get_pagination(html):
         items = []
@@ -219,14 +218,18 @@ def show_courses(url, page='1'):
             item.parent.find('a', {'class': 'editors-picks-title'}).string),
         'path': plugin.url_for('watch_lecture', url=full_url(item.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
-        'is_folder': False,
         'is_playable': True,
     } for item in lectures]
 
     pagination_items = get_pagination(html)
-    return plugin.finish(pagination_items + course_items + lecture_items)
+    return pagination_items + course_items + lecture_items
 
-@plugin.route('/lectures/<url>/')
+
+cache = plugin.get_cache('function_cache')
+cache.clear()
+cache.sync()
+
+@plugin.cached_route('/lectures/<url>/')
 def show_lectures(url):
     def get_plot(item):
         if item.p:
@@ -251,12 +254,11 @@ def show_lectures(url):
         'label': item.h4.a.string,
         'path': plugin.url_for('watch_lecture', url=full_url(item.h4.a['href'])),
         'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
-        'is_folder': False,
         'is_playable': True,
         # Call to get_plot is because we are using this view to parse a course page
         # and also parse a playlist page. The playlist pages don't contain a lecture
         # description.
-        'info': {'plot': get_plot(item)},
+        #'info': {'plot': get_plot(item)},
         'context_menu': [
             (plugin.get_string(30300), # Add to favorites
              'XBMC.RunPlugin(%s)' % favorites.url_for(
@@ -266,8 +268,8 @@ def show_lectures(url):
         ],
 
     } for item in lectures]
+    return items
 
-    return plugin.finish(items)
 
 @plugin.route('/watch/<url>/')
 def watch_lecture(url):

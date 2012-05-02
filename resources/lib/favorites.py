@@ -1,17 +1,17 @@
-# Copyright 2011 Jonathan Beluch.  
-# 
-# This program is free software: you can redistribute it and/or modify 
-# it under the terms of the GNU General Public License as published by 
-# the Free Software Foundation, either version 3 of the License, or 
-# (at your option) any later version. 
-# 
-# This program is distributed in the hope that it will be useful, 
-# but WITHOUT ANY WARRANTY; without even the implied warranty of 
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
-# GNU General Public License for more details. 
-# 
-# You should have received a copy of the GNU General Public License 
-# along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+# Copyright 2011 Jonathan Beluch.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from xbmcswift2 import Module, download_page as _download_page, xbmcgui
 from BeautifulSoup import BeautifulSoup as BS
 from urllib import urlencode
@@ -42,7 +42,7 @@ class AuthSession(object):
             self.cookie_jar.load(ignore_discard=True, ignore_expires=True)
         except IOError:
             pass
-        
+
     def _set_opener(self, cookie_jar):
         self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie_jar))
 
@@ -111,13 +111,12 @@ def show_favorites(url):
 
     items = [{
         'label': item.h3.a.string,
-        'url': favorites.url_for('watch_lecture',
+        'path': favorites.url_for('watch_lecture',
                                  url=full_url(item.h3.a['href'])),
         'thumbnail': full_url(item.img['src']),
-        'is_folder': False,
         'is_playable': True,
         'context_menu': [
-            (favorites._plugin.get_string(30301), 
+            (favorites._plugin.get_string(30301),
              'XBMC.RunPlugin(%s)' % favorites.url_for(
                 'favorites.remove_lecture',
                 url=full_url(item.find('div', {'class': 'delete'}).a['href'])
