@@ -43,6 +43,16 @@ def filter_free(items):
     return [item for item in items if not item['label'].startswith('Online')]
 
 
+def is_course(url):
+    '''Returns True if the given url is for a course.'''
+    return '/courses/' in url
+
+
+def is_lecture(url):
+    '''Returns True if the given url is for a lecture.'''
+    return '/lectures/' in url
+
+
 @plugin.route('/')
 def show_index():
     '''Main menu'''
@@ -216,54 +226,55 @@ def show_topics(url):
     return items
 
 
-@plugin.cached_route('/courses/<url>/')
-@plugin.cached_route('/courses/<url>/<page>/', name='show_courses_page')
+@plugin.route('/courses/<url>/')
+@plugin.route('/courses/<url>/<page>/', name='show_courses_page')
 def show_courses(url, page='1'):
+    '''Displays courses for a given topic. Uses pagination.'''
     def get_pagination(html):
         items = []
         if int(page) > 1:
             items.append({
                 'label': '< Previous',
-                'path': plugin.url_for('show_courses_page', url=url, page=str(int(page)-1)),
+                'path': plugin.url_for('show_courses_page', url=url,
+                                       page=str(int(page)-1)),
             })
 
         next = html.find('span', {'class': 'tab-nav-arrow tab-nav-arrow-r'})
         if next:
             items.append({
                 'label': 'Next >',
-                'path': plugin.url_for('show_courses_page', url=url, page=str(int(page)+1)),
+                'path': plugin.url_for('show_courses_page', url=url,
+                                       page=str(int(page)+1)),
             })
         return items
 
-    html = htmlify('%s/page:%s' % (url, page))
-    courses_lectures = html.findAll('div', {'class': 'thumb'})
+    @plugin.cache()
+    def get_course_items(url, page):
+        html = htmlify('%s/page:%s' % (url, page))
+        courses_lectures = html.findAll('div', {'class': 'thumb'})
 
-    # Some of the results can be a standalone lecture, not a link to a course
-    # page. We need to display these separately.
-    courses = filter(lambda item: '/courses/' in item.a['href'], courses_lectures)
-    lectures = filter(lambda item: '/lectures/' in item.a['href'], courses_lectures)
+        course_items = [{
+            'label': item.parent.find('a', {'class': 'editors-picks-title'}).string,
+            'path': plugin.url_for('show_lectures', url=full_url(item.a['href'])),
+            'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
+        } for item in courses_lectures if is_course(item.a['href'])]
 
-    course_items = [{
-        'label': item.parent.find('a', {'class': 'editors-picks-title'}).string,
-        'path': plugin.url_for('show_lectures', url=full_url(item.a['href'])),
-        'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
-    } for item in courses]
+        lecture_items = [{
+            'label': '%s: %s' % (plugin.get_string(30206),
+                item.parent.find('a', {'class': 'editors-picks-title'}).string),
+            'path': plugin.url_for('watch_lecture', url=full_url(item.a['href'])),
+            'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
+            'is_playable': True,
+        } for item in courses_lectures if is_lecture(item.a['href'])]
 
-    lecture_items = [{
-        'label': '%s: %s' % (plugin.get_string(30206),
-            item.parent.find('a', {'class': 'editors-picks-title'}).string),
-        'path': plugin.url_for('watch_lecture', url=full_url(item.a['href'])),
-        'thumbnail': full_url(item.find('img', {'class': 'thumb-144'})['src']),
-        'is_playable': True,
-    } for item in lectures]
-
-    pagination_items = get_pagination(html)
-    return pagination_items + course_items + lecture_items
+        pagination_items = get_pagination(html)
+        return pagination_items + course_items + lecture_items
+    return plugin.finish(get_course_items(url, page), update_listing=page!='1')
 
 
-cache = plugin.get_cache('function_cache')
-cache.clear()
-cache.sync()
+#cache = plugin.get_cache('function_cache')
+#cache.clear()
+#cache.sync()
 
 @plugin.cached_route('/lectures/<url>/')
 def show_lectures(url):
