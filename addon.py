@@ -89,37 +89,54 @@ def show_universities(url):
     return items
 
 
-@plugin.cached_route('/instructors/', options={'page': '1'})
-@plugin.cached_route('/instructors/<page>/', name='show_instructors_page')
+@plugin.route('/instructors/', options={'page': '1'})
+@plugin.route('/instructors/<page>/', name='show_instructors_page')
 def show_instructors(page):
+    '''Lists instructors found on the website. Since the list is long,
+    this view includes pagination list items.
+    '''
     def get_pagination(html):
         items = []
-        previous = html.find('span', {'class': 'tab-nav-arrow tab-nav-arrow-l'})
+        previous = html.find('span',
+                             {'class': 'tab-nav-arrow tab-nav-arrow-l'})
         if int(page) > 1:
             items.append({
                 'label': '< Previous',
-                'path': plugin.url_for('show_instructors_page', page=str(int(page)-1)),
+                'path': plugin.url_for('show_instructors_page',
+                                       page=str(int(page)-1)),
             })
 
         next = html.find('span', {'class': 'tab-nav-arrow tab-nav-arrow-r'})
         if next:
             items.append({
                 'label': 'Next >',
-                'path': plugin.url_for('show_instructors_page', page=str(int(page)+1)),
+                'path': plugin.url_for('show_instructors_page',
+                                       page=str(int(page)+1)),
             })
         return items
 
-    url = full_url('speakers/page:%s' % page)
-    html = htmlify(url)
-    speakers = html.findAll('div', {'class': 'blue-hover'})
+    @plugin.cache()
+    def get_instructor_items(page):
+        '''This function exists so we can cache the return value based
+        on the unique page number. Since we are passing a value for
+        update_listing to plugin.finish() below, we cannot use the
+        cached_route decorator since it doesn't keep track of side
+        effects like values passed to endOfDirectory().
+        '''
+        url = full_url('speakers/page:%s' % page)
+        html = htmlify(url)
+        speakers = html.findAll('div', {'class': 'blue-hover'})
 
-    items = [{
-        'label': item.div.string,
-        'path': plugin.url_for('show_instructor_courses', url=full_url(item.a['href'])),
-    } for item in speakers]
+        items = [{
+            'label': item.div.string,
+            'path': plugin.url_for('show_instructor_courses',
+                                   url=full_url(item.a['href'])),
+        } for item in speakers]
 
-    # Add pagination
-    return get_pagination(html) + items
+        # Add pagination
+        return get_pagination(html) + items
+
+    return plugin.finish(get_instructor_items(page), update_listing=page!='1')
 
 
 @plugin.cached_route('/topinstructors/', options={'url': BASE_URL})
