@@ -1,6 +1,8 @@
 import os
 import sys
 from xbmcswift2.cli import testing
+from xbmcswift2.cli.testing import (assert_is_playable, assert_listitems_response,
+    assert_listitem, assert_media_played)
 from unittest import TestCase
 
 # Update sys.path in order to import our plugin
@@ -42,23 +44,13 @@ class TestAddon(testing.XBMCAddonTestCase):
         self.assert_media_played(items)
         assert items[0].get_path().startswith('plugin://plugin.video.youtube')
 
-    
-'''
- # test gen stuff for nose
-
-
-    def check_view(self, item):
-        TestAljazeeraViews.check_view.description = ("test_view(<%s '%s'>)" % (item.get_label(), item.get_path())).encode('utf-8')
-        response = addon.plugin.test(Modes.ONCE, [])
-        self.assert_listitems_response(item, response)
-        self.to_visit.extend(i for i in response if i not in self.visited and i not in self.to_visit and not i.get_played())
-
-    def test_view_generator(self):
-        while self.to_visit:
-            item = self.to_visit.pop(0)
-            #self.check_view.description = ("test_view(<%s '%s'>)" % (item.get_label(), item.get_path())).encode('utf-8')
-            #setattr(self.check_view, 'description', 'poop')
-            #yield self.check_view, self.to_visit.pop(0)
-            yield TestAljazeeraViews.check_view, self, item
-
-'''
+    def test_get_favorites(self):
+        plugin.set_setting('username', 'jbeluch')
+        # NOCOMMIT
+        plugin.set_setting('password', 'blue66')
+        #raise Exception, 'Must set username/password in code'
+        url = 'plugin://plugin.video.academicearth/favorites/'
+        items = testing.test_plugin(plugin, url)
+        self.assert_listitems_response(items)
+        for item in items:
+            self.assert_is_playable(item)
