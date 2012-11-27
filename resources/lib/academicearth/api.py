@@ -7,8 +7,9 @@
     the Academic Earth website.
 
 '''
+import scraper
 from scraper import (get_subjects, get_courses, get_subject_metadata,
-                     get_course_metadata, get_lecture_metadata)
+                     get_course_metadata, get_lecture_metadata, get_university_metadata)
 
 
 class AcademicEarth(object):
@@ -22,6 +23,10 @@ class AcademicEarth(object):
     def get_subjects(self):
         '''Returns a list of subjects available on the website.'''
         return [Subject(**info) for info in get_subjects()]
+
+    def get_universities(self):
+        '''Returns a list of universities available on the website.'''
+        return [University(**info) for info in scraper.get_universities()]
 
 
 class Subject(object):
@@ -56,7 +61,7 @@ class Subject(object):
         if not self._name:
             self._load_metadata()
         return self._name
-        
+
     @property
     def courses(self):
         '''List of courses available for this subject'''
@@ -70,6 +75,35 @@ class Subject(object):
         if not self._loaded:
             self._load_metadata()
         return self._lectures
+
+
+class University(Subject):
+
+    def __init__(self, url, name=None, icon=None):
+        self.url = url
+        self._name = name
+        self._icon = icon
+        self._courses = None
+        self._lectures = None
+        self._loaded = False
+
+    def __repr__(self):
+        return u"<University '%s'>" % self.name
+
+    def _load_metadata(self):
+        resp = get_university_metadata(self.url)
+        if not self._name:
+            self._name = resp['name']
+        self._courses = [Course(**info) for info in resp['courses']]
+        self._lectures = [Lecture(**info) for info in resp['lectures']]
+        self._description = resp['description']
+        self._loaded = True
+
+    @property
+    def icon(self):
+        if not self._icon:
+            self._load_metadata()
+        return self._icon
 
 
 class Course(object):

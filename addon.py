@@ -16,7 +16,7 @@
 from operator import itemgetter
 from xbmcswift2 import Plugin
 from resources.lib.academicearth.api import (AcademicEarth, Subject, Course,
-                                             Lecture)
+                                             Lecture, University)
 
 PLUGIN_NAME = 'Academic Earth'
 PLUGIN_ID = 'plugin.video.academicearth'
@@ -28,8 +28,26 @@ def show_index():
     items = [
         {'label': plugin.get_string(30200),
          'path': plugin.url_for('show_subjects')},
+
+        {'label': plugin.get_string(30201),
+         'path': plugin.url_for('show_universities')},
     ]
     return items
+
+
+@plugin.route('/universities/')
+def show_universities():
+    api = AcademicEarth()
+    unis = api.get_universities()
+
+    items = [{
+        'label': uni.name,
+        'path': plugin.url_for('show_university_info', url=uni.url),
+        'icon': uni.icon,
+    } for uni in unis]
+
+    sorted_items = sorted(items, key=lambda item: item['label'])
+    return sorted_items
 
 
 @plugin.route('/subjects/')
@@ -44,6 +62,26 @@ def show_subjects():
 
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items
+
+
+@plugin.route('/universities/<url>/')
+def show_university_info(url):
+    uni = University.from_url(url)
+
+    courses = [{
+        'label': course.name,
+        'path': plugin.url_for('show_course_info', url=course.url),
+    } for course in uni.courses]
+
+    lectures = [{
+        'label': 'Lecture: %s' % lecture.name,
+        'path': plugin.url_for('play_lecture', url=lecture.url),
+        'is_playable': True,
+    } for lecture in uni.lectures]
+
+    by_label = itemgetter('label')
+    items = sorted(courses, key=by_label) + sorted(lectures, key=by_label)
+    return items
 
 
 @plugin.route('/subjects/<url>/')

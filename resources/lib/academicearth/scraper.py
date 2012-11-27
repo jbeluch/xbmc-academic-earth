@@ -13,7 +13,7 @@ from BeautifulSoup import BeautifulSoup as BS
 
 BASE_URL = 'http://www.academicearth.org'
 def _url(path):
-    '''Returns a full url for the given path'''            
+    '''Returns a full url for the given path'''
     return urljoin(BASE_URL, path)
 
 
@@ -37,6 +37,22 @@ def make_showall_url(url):
     if not url.endswith('/'):
         url += '/'
     return url + 'page:1/show:500'
+
+
+def get_universities():
+    '''Returns a list of universities available on the website.'''
+    url = make_showall_url(_url('universities'))
+    html = _html(url)
+
+
+    parent = html.find('div', {'class': 'lectureVideosIndex'}).div
+    unis = parent.findAll('div')
+
+    return [{
+        'name': uni.findAll('a')[-1].string.strip(),
+        'url': _url(uni.a['href']),
+        'icon': uni.img['src'],
+    } for uni in unis]
 
 
 def get_subjects():
@@ -65,6 +81,22 @@ def get_subjects():
     return [item for item in items if item['name'] and item['url']]
 
 
+def get_university_metadata(university_url):
+    '''Returns metadata for a university parsed from the given url'''
+    html = _html(make_showall_url(university_url))
+    name = get_university_name(html)
+    courses = get_courses(html)
+    lectures = get_lectures(html)
+    desc = get_university_description(html)
+
+    return {
+        'name': name,
+        'courses': courses,
+        'lectures': lectures,
+        'description': desc,
+    }
+
+
 def get_subject_metadata(subject_url):
     '''Returns metadata for a subject parsed from the given url'''
     html = _html(make_showall_url(subject_url))
@@ -85,6 +117,10 @@ def get_subject_name(html):
     return html.find('article').h1.text
 
 
+def get_university_name(html):
+    return html.find('div', {'class': 'title'}).h1.text
+
+
 def get_course_name(html):
     return html.find('section', {'class': 'pagenav'}).span.text
 
@@ -96,7 +132,12 @@ def get_lecture_name(html):
 def get_subject_description(html):
     desc_nodes = html.find('article').findAll('span')
     return '\n'.join(node.text.strip() for node in desc_nodes)
-    
+
+
+def get_university_description(html):
+    desc_nodes = html.find('div', {'class': 'courseDetails'}).findAll('span')
+    return '\n'.join(node.text.strip() for node in desc_nodes)
+
 
 def _get_courses_or_lectures(class_type, html):
     '''class_type can be 'course' or 'lecture'.'''
@@ -137,9 +178,8 @@ def get_lecture_metadata(lecture_url):
     youtube_id = parse_youtube_id(html)
     return {
         'name': name,
-        'youtube_id': youtube_id        
+        'youtube_id': youtube_id
     }
-    
 
 
 def parse_youtube_id(html):
