@@ -26,3 +26,30 @@ class UniversityIT(unittest.TestCase):
         assert uni['description'].startswith('The University of Oxford')
         assert len(uni['courses']) > 7
         assert len(uni['lectures']) > 0
+
+
+
+class SubjectIT(unittest.TestCase):
+
+    def test_get_subjects_partial(self):
+        prog = {
+            'url': u'http://www.academicearth.org/subjects/programming',
+            'name': u'Programming',
+        }
+
+        subjs = scraper.Subject.get_subjects_partial()
+
+        # currently 67
+        self.assertTrue(len(subjs) > 64)
+        self.assertTrue(prog in subjs)
+
+    def test_from_url(self):
+        url = 'http://www.academicearth.org/subjects/programming'
+        subj = scraper.Subject.from_url(url)
+
+        assert subj['name'] == 'Programming'
+        assert subj['description'].startswith('Computer programmers code and')
+
+        # Both currently at 17
+        assert len(subj['courses']) > 15
+        assert len(subj['lectures']) > 15

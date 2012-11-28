@@ -147,8 +147,7 @@ class Subject(object):
 
     @staticmethod
     def get_description(html):
-        desc_nodes = html.find('article').findAll('span')
-        return '\n'.join(node.text.strip() for node in desc_nodes)
+        return html.find('article').p.text
 
     @staticmethod
     def get_courses(html):
