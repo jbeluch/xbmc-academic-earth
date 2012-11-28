@@ -41,7 +41,7 @@ def make_showall_url(url):
     '''
     if not url.endswith('/'):
         url += '/'
-    return url + 'page:1/show:500'
+    return url + 'page:1/show:1000'
 
 
 class University(object):
@@ -158,6 +158,48 @@ class Subject(object):
     def get_lectures(html):
         return _get_courses_or_lectures('lecture', html)
 
+
+class Speaker(object):
+
+    listing_url = make_showall_url(_url('speakers'))
+
+    @classmethod
+    def get_speakers_partial(cls):
+        '''Returns a list of speakers available on the website.'''
+        html = _html(cls.listing_url)
+        speakers = html.findAll('div', {'class': 'blue-hover'})
+        return [{
+            'name': spkr.div.string.strip(),
+            'url': _url(spkr.a['href']),
+        } for spkr in speakers]
+
+    @classmethod
+    def from_url(cls, url):
+        '''Returns metadata for a speaker parsed from the given url'''
+        html = _html(make_showall_url(url))
+        name = cls.get_name(html)
+        courses = cls.get_courses(html)
+        lectures = cls.get_lectures(html)
+
+        return {
+            'name': name,
+            'courses': courses,
+            'lectures': lectures,
+        }
+
+    @staticmethod
+    def get_name(html):
+        return html.find('div', {'class': 'title'}).h1.text
+
+    @staticmethod
+    def get_courses(html):
+        return _get_courses_or_lectures('course', html)
+
+    @staticmethod
+    def get_lectures(html):
+        return _get_courses_or_lectures('lecture', html)
+
+
 class Course(object):
 
     @classmethod
@@ -218,4 +260,3 @@ def _get_courses_or_lectures(class_type, html):
     } for node in nodes]
 
     return items
-

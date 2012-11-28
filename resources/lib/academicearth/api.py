@@ -26,6 +26,11 @@ class AcademicEarth(object):
         return [University(info, partial=True) for info
                 in scraper.University.get_universities_partial()]
 
+    def get_speakers(self):
+        '''Returns a list of speakers available on the website.'''
+        return [Speaker(info, partial=True) for info
+                in scraper.Speaker.get_speakers_partial()]
+
 
 class _BaseAPIObject(object):
 
@@ -58,33 +63,31 @@ class _BaseAPIObject(object):
         info = cls.scraper_cls.from_url(url)
         return cls(info)
 
+class _ObjectWithCoursesLectures(_BaseAPIObject):
 
-class Subject(_BaseAPIObject):
+    def _setattrs(self, info):
+        for attr_name, attr_value in info.items():
+            if attr_name == 'courses':
+                setattr(self, attr_name, [Course(info) for info in attr_value])
+            elif attr_name == 'lectures':
+                setattr(self, attr_name, [Lecture(info) for info in attr_value])
+            else:
+                setattr(self, attr_name, attr_value)
+
+class Subject(_ObjectWithCoursesLectures):
 
     scraper_cls = scraper.Subject
 
-    def _setattrs(self, info):
-        for attr_name, attr_value in info.items():
-            if attr_name == 'courses':
-                setattr(self, attr_name, [Course(info) for info in attr_value])
-            elif attr_name == 'lectures':
-                setattr(self, attr_name, [Lecture(info) for info in attr_value])
-            else:
-                setattr(self, attr_name, attr_value)
 
-
-class University(_BaseAPIObject):
+class University(_ObjectWithCoursesLectures):
 
     scraper_cls = scraper.University
 
-    def _setattrs(self, info):
-        for attr_name, attr_value in info.items():
-            if attr_name == 'courses':
-                setattr(self, attr_name, [Course(info) for info in attr_value])
-            elif attr_name == 'lectures':
-                setattr(self, attr_name, [Lecture(info) for info in attr_value])
-            else:
-                setattr(self, attr_name, attr_value)
+
+class Speaker(_ObjectWithCoursesLectures):
+
+    scraper_cls = scraper.Speaker
+
 
 class Course(_BaseAPIObject):
 

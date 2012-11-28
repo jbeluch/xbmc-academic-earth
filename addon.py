@@ -30,6 +30,9 @@ def show_index():
 
         {'label': plugin.get_string(30201),
          'path': plugin.url_for('show_universities')},
+
+        {'label': plugin.get_string(30202),
+         'path': plugin.url_for('show_speakers')},
     ]
     return items
 
@@ -63,8 +66,24 @@ def show_subjects():
     return sorted_items
 
 
+@plugin.route('/speakers/')
+def show_speakers():
+    ae = api.AcademicEarth()
+    speakers = ae.get_speakers()
+
+    items = [{
+        'label': speaker.name,
+        'path': plugin.url_for('show_speaker_info', url=speaker.url),
+    } for speaker in speakers]
+
+    sorted_items = sorted(items, key=lambda item: item['label'])
+    return sorted_items
+
+
 @plugin.route('/subjects/<url>/', 'show_subject_info', {'cls': api.Subject})
-@plugin.route('/universities/<url>/', 'show_university_info', {'cls': api.University})
+@plugin.route('/universities/<url>/', 'show_university_info',
+              {'cls': api.University})
+@plugin.route('/speakers/<url>/', 'show_speaker_info', {'cls': api.Speaker})
 def show_info(url, cls):
     uni = cls.from_url(url)
 
@@ -86,7 +105,7 @@ def show_info(url, cls):
 
 @plugin.route('/courses/<url>/')
 def show_course_info(url):
-    course = Course.from_url(url)
+    course = api.Course.from_url(url)
     lectures = [{
         'label': 'Lecture: %s' % lecture.name,
         'path': plugin.url_for('play_lecture', url=lecture.url),
@@ -98,8 +117,9 @@ def show_course_info(url):
 
 @plugin.route('/lectures/<url>/')
 def play_lecture(url):
-    lecture = Lecture.from_url(url)
-    url = 'plugin://plugin.video.youtube/?action=play_video&videoid=%s' % lecture.youtube_id
+    lecture = api.Lecture.from_url(url)
+    ptn = 'plugin://plugin.video.youtube/?action=play_video&videoid=%s'
+    url = ptn % lecture.youtube_id
     plugin.log.info('Playing url: %s' % url)
     plugin.set_resolved_url(url)
 
