@@ -20,6 +20,7 @@ from resources.lib.academicearth import api
 PLUGIN_NAME = 'Academic Earth'
 PLUGIN_ID = 'plugin.video.academicearth'
 plugin = Plugin(PLUGIN_NAME, PLUGIN_ID, __file__)
+AE = api.AcademicEarth()
 
 
 @plugin.route('/')
@@ -37,43 +38,19 @@ def show_index():
     return items
 
 
-@plugin.route('/universities/')
-def show_universities():
-    ae = api.AcademicEarth()
-    unis = ae.get_universities()
-
-    items = [{
-        'label': uni.name,
-        'path': plugin.url_for('show_university_info', url=uni.url),
-        'icon': uni.icon,
-    } for uni in unis]
-
-    sorted_items = sorted(items, key=lambda item: item['label'])
-    return sorted_items
-
-
-@plugin.route('/subjects/')
-def show_subjects():
-    ae = api.AcademicEarth()
-    subjects = ae.get_subjects()
-
-    items = [{
-        'label': subject.name,
-        'path': plugin.url_for('show_subject_info', url=subject.url),
-    } for subject in subjects]
-
-    sorted_items = sorted(items, key=lambda item: item['label'])
-    return sorted_items
-
-@plugin.route('/speakers/')
-def show_speakers():
-    ae = api.AcademicEarth()
-    speakers = ae.get_speakers()
-
-    items = [{
-        'label': speaker.name,
-        'path': plugin.url_for('show_speaker_info', url=speaker.url),
-    } for speaker in speakers]
+@plugin.route('/universities/', 'show_universities', {'fetch_func': AE.get_universities, 'next_view': 'show_university_info'})
+@plugin.route('/subjects/', 'show_subjects', {'fetch_func': AE.get_subjects, 'next_view': 'show_subject_info'})
+@plugin.route('/speakers/', 'show_speakers', {'fetch_func': AE.get_speakers, 'next_view': 'show_speaker_info'})
+def show_topnav_items(fetch_func, next_view):
+    items = []
+    for obj in fetch_func():
+        item = {
+            'label': obj.name,
+            'path': plugin.url_for(next_view, url=obj.url),
+        }
+        if hasattr(obj, 'icon'):
+            item['icon'] = obj.icon
+        items.append(item)
 
     sorted_items = sorted(items, key=lambda item: item['label'])
     return sorted_items
