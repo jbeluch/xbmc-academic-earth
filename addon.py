@@ -15,8 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from operator import itemgetter
 from xbmcswift2 import Plugin
-from resources.lib.academicearth.api import (AcademicEarth, Subject, Course,
-                                             Lecture, University)
+from resources.lib.academicearth import api
 
 PLUGIN_NAME = 'Academic Earth'
 PLUGIN_ID = 'plugin.video.academicearth'
@@ -37,8 +36,8 @@ def show_index():
 
 @plugin.route('/universities/')
 def show_universities():
-    api = AcademicEarth()
-    unis = api.get_universities()
+    ae = api.AcademicEarth()
+    unis = ae.get_universities()
 
     items = [{
         'label': uni.name,
@@ -52,8 +51,8 @@ def show_universities():
 
 @plugin.route('/subjects/')
 def show_subjects():
-    api = AcademicEarth()
-    subjects = api.get_subjects()
+    ae = api.AcademicEarth()
+    subjects = ae.get_subjects()
 
     items = [{
         'label': subject.name,
@@ -64,9 +63,10 @@ def show_subjects():
     return sorted_items
 
 
-@plugin.route('/universities/<url>/')
-def show_university_info(url):
-    uni = University.from_url(url)
+@plugin.route('/subjects/<url>/', 'show_subject_info', {'cls': api.Subject})
+@plugin.route('/universities/<url>/', 'show_university_info', {'cls': api.University})
+def show_info(url, cls):
+    uni = cls.from_url(url)
 
     courses = [{
         'label': course.name,
@@ -78,26 +78,6 @@ def show_university_info(url):
         'path': plugin.url_for('play_lecture', url=lecture.url),
         'is_playable': True,
     } for lecture in uni.lectures]
-
-    by_label = itemgetter('label')
-    items = sorted(courses, key=by_label) + sorted(lectures, key=by_label)
-    return items
-
-
-@plugin.route('/subjects/<url>/')
-def show_subject_info(url):
-    subject = Subject.from_url(url)
-
-    courses = [{
-        'label': course.name,
-        'path': plugin.url_for('show_course_info', url=course.url),
-    } for course in subject.courses]
-
-    lectures = [{
-        'label': 'Lecture: %s' % lecture.name,
-        'path': plugin.url_for('play_lecture', url=lecture.url),
-        'is_playable': True,
-    } for lecture in subject.lectures]
 
     by_label = itemgetter('label')
     items = sorted(courses, key=by_label) + sorted(lectures, key=by_label)
