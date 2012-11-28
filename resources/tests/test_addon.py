@@ -9,13 +9,14 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 
 import addon
+from resources.lib.academicearth import api
 
 
 class TestViews(unittest.TestCase):
 
     def test_show_index(self):
         items = addon.show_index()
-        self.assertEqual(len(items), 1)
+        self.assertEqual(len(items), 3)
 
         item = items[0]
         self.assertEqual(item['label'], 'Subjects')
@@ -38,7 +39,7 @@ class TestViews(unittest.TestCase):
 
     def test_show_subject_info(self):
         url = 'http://www.academicearth.org/subjects/programming'
-        items = addon.show_subject_info(url)
+        items = addon.show_info(url, api.Subject)
         self.assertTrue(len(items) > 30)
 
         for item in items:

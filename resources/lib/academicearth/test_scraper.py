@@ -1,16 +1,16 @@
 import unittest
 import scraper
 
-class UniversitiesIT(unittest.TestCase):
+class UniversityIT(unittest.TestCase):
 
-    def test_get_universities(self):
+    def test_get_universities_partial(self):
         yale = {
             'url': u'http://www.academicearth.org/universities/yale',
             'name': u'Yale',
             'icon': u'http://ae_img.s3.amazonaws.com/University/3/200x100_Logo.jpg',
         }
 
-        unis = scraper.get_universities()
+        unis = scraper.University.get_universities_partial()
 
         # currently there are 41 universities
         self.assertTrue(len(unis) > 35)
@@ -18,7 +18,11 @@ class UniversitiesIT(unittest.TestCase):
         # hopefully Yale will always be there...
         self.assertTrue(yale in unis)
 
-    def test_get_university_metadata(self):
+    def test_from_url(self):
         url = 'http://www.academicearth.org/universities/university-of-oxford'
-        metadata = scraper.get_university_metadata(url)
-        print metadata
+        uni = scraper.University.from_url(url)
+
+        assert uni['name'] == 'Oxford'
+        assert uni['description'].startswith('The University of Oxford')
+        assert len(uni['courses']) > 7
+        assert len(uni['lectures']) > 0
