@@ -1,15 +1,11 @@
 '''
-
     academicearth.api
     ~~~~~~~~~~~~~~~~~
 
     This module contains the API classes and method to parse information from
     the Academic Earth website.
-
 '''
 import scraper
-from scraper import (get_subjects, get_courses, get_subject_metadata,
-                     get_course_metadata, get_lecture_metadata, get_university_metadata)
 
 
 class AcademicEarth(object):
@@ -22,154 +18,85 @@ class AcademicEarth(object):
 
     def get_subjects(self):
         '''Returns a list of subjects available on the website.'''
-        return [Subject(**info) for info in get_subjects()]
+        return [Subject(info, partial=True) for info
+                in scraper.Subject.get_subjects_partial()]
 
     def get_universities(self):
         '''Returns a list of universities available on the website.'''
-        return [University(**info) for info in scraper.get_universities()]
+        return [University(info, partial=True) for info
+                in scraper.University.get_universities_partial()]
 
 
-class Subject(object):
-    '''Object representing an Academic Earth subject.'''
+class _BaseAPIObject(object):
 
-    def __init__(self, url, name=None):
-        self.url = url
-        self._name = name
-        self._courses = None
-        self._lectures = None
-        self._loaded = False
+    scraper_cls = scraper.University
+
+    def __init__(self, info, partial=False):
+        self._setattrs(info)
+        self.partial = partial
+
+    def __getattr__(self, name):
+        if self.partial:
+            self.load()
+            return getattr(self, name)
+        raise AttributeError, '%s instance has no attribute %s' % (self.__class__.__name__, name)
+
+    def __repr__(self):
+        return u"<%s '%s'>" % (self.__class__.__name__, self.name)
+
+    def _setattrs(self, info):
+        for attr_name, attr_value in info.items():
+            setattr(self, attr_name, attr_value)
+
+    def load(self):
+        full_info = self.scraper_cls.from_url(url)
+        self._setattrs(info)
+        self.partial = False
 
     @classmethod
     def from_url(cls, url):
-        return cls(url=url)
-
-    def __repr__(self):
-        return u"<Subject '%s'>" % self.name
-
-    def _load_metadata(self):
-        resp = get_subject_metadata(self.url)
-        if not self._name:
-            self._name = resp['name']
-        self._courses = [Course(**info) for info in resp['courses']]
-        self._lectures = [Lecture(**info) for info in resp['lectures']]
-        self._description = resp['description']
-        self._loaded = True
-
-    @property
-    def name(self):
-        '''Subject name'''
-        if not self._name:
-            self._load_metadata()
-        return self._name
-
-    @property
-    def courses(self):
-        '''List of courses available for this subject'''
-        if not self._loaded:
-            self._load_metadata()
-        return self._courses
-
-    @property
-    def lectures(self):
-        '''List of lectures available for this subject'''
-        if not self._loaded:
-            self._load_metadata()
-        return self._lectures
+        info = cls.scraper_cls.from_url(url)
+        return cls(info)
 
 
-class University(Subject):
+class Subject(_BaseAPIObject):
 
-    def __init__(self, url, name=None, icon=None):
-        self.url = url
-        self._name = name
-        self._icon = icon
-        self._courses = None
-        self._lectures = None
-        self._loaded = False
+    scraper_cls = scraper.Subject
 
-    def __repr__(self):
-        return u"<University '%s'>" % self.name
-
-    def _load_metadata(self):
-        resp = get_university_metadata(self.url)
-        if not self._name:
-            self._name = resp['name']
-        self._courses = [Course(**info) for info in resp['courses']]
-        self._lectures = [Lecture(**info) for info in resp['lectures']]
-        self._description = resp['description']
-        self._loaded = True
-
-    @property
-    def icon(self):
-        if not self._icon:
-            self._load_metadata()
-        return self._icon
+    def _setattrs(self, info):
+        for attr_name, attr_value in info.items():
+            if attr_name == 'courses':
+                setattr(self, attr_name, [Course(info) for info in attr_value])
+            elif attr_name == 'lectures':
+                setattr(self, attr_name, [Lecture(info) for info in attr_value])
+            else:
+                setattr(self, attr_name, attr_value)
 
 
-class Course(object):
+class University(_BaseAPIObject):
 
-    def __init__(self, url, name=None, **kwargs):
-        self.url = url
-        self._name = name
-        self._loaded = False
-        self._lectures = None
+    scraper_cls = scraper.University
 
-    @classmethod
-    def from_url(cls, url):
-        return cls(url=url)
+    def _setattrs(self, info):
+        for attr_name, attr_value in info.items():
+            if attr_name == 'courses':
+                setattr(self, attr_name, [Course(info) for info in attr_value])
+            elif attr_name == 'lectures':
+                setattr(self, attr_name, [Lecture(info) for info in attr_value])
+            else:
+                setattr(self, attr_name, attr_value)
 
-    def __repr__(self):
-        return u"<Course '%s'>" % self.name
+class Course(_BaseAPIObject):
 
-    def _load_metadata(self):
-        resp = get_course_metadata(self.url)
-        if not self._name:
-            self._name = resp['name']
-        self._lectures = [Lecture(**info) for info in resp['lectures']]
-        self._loaded = True
+    scraper_cls = scraper.Course
 
-    @property
-    def name(self):
-        if not self._name:
-            self._load_metadata()
-        return self._name
-
-    @property
-    def lectures(self):
-        if not self._loaded:
-            self._load_metadata()
-        return self._lectures
+    def _setattrs(self, info):
+        for attr_name, attr_value in info.items():
+            if attr_name == 'lectures':
+                setattr(self, attr_name, [Lecture(info) for info in attr_value])
+            else:
+                setattr(self, attr_name, attr_value)
 
 
-class Lecture(object):
-
-    def __init__(self, url, name=None, **kwargs):
-        self.url = url
-        self._name = name
-        self._loaded = False
-
-    @classmethod
-    def from_url(cls, url):
-        return cls(url=url)
-
-    def __repr__(self):
-        return u"<Lecture '%s'>" % self.name
-
-    def _load_metadata(self):
-        resp = get_lecture_metadata(self.url)
-        if not self._name:
-            self._name = resp['name']
-        self._youtube_id = resp['youtube_id']
-        self._loaded = True
-
-    @property
-    def name(self):
-        if not self._name:
-            self._load_metadata()
-        return self._name
-
-    @property
-    def youtube_id(self):
-        if not self._loaded:
-            self._load_metadata()
-        return self._youtube_id
+class Lecture(_BaseAPIObject):
+    scraper_cls = scraper.Lecture
