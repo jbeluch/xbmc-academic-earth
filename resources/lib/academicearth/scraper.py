@@ -238,12 +238,9 @@ class Lecture(object):
 
     @staticmethod
     def parse_youtube_id(html):
-        embed = html.find('embed')
-        yt_ptn = re.compile(r'http://www.youtube.com/v/(.+?)\?')
-        match = yt_ptn.search(embed['src'])
-        if match:
-            return match.group(1)
-        return None
+        url = html.find('a',
+                        href=lambda h: h.startswith('http://www.youtube.com'))
+        return url['href'].split('=')[1]
 
 
 def _get_courses_or_lectures(class_type, html):
