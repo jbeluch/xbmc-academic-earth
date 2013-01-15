@@ -10,6 +10,7 @@
   </extension>
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
+    <language />
     <summary>Watch lectures from Academic Earth (http://academicearth.org)</summary>
     <description>Browse online courses and lectures from the world's top scholars.</description>
   </extension>
